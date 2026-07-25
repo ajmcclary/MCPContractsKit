@@ -28,14 +28,20 @@ import PackageDescription
 // and JSON schemas (they carry MCP-SDK/JSONSchema types; this package
 // must stay MCP-SDK-free), plugin manifests, persistence, and UI.
 //
-// Zero package dependencies (Foundation only). Swift 5 language mode
-// keeps the moved code byte-behaviorally identical (AgentRuntimeKit /
-// PromptAssemblyKit / RepoPromptCore promoted-target precedent).
+// Zero package dependencies (Foundation only). Swift 6 language mode with
+// StrictConcurrency: every type here is an immutable Foundation value type
+// that already declared Sendable, so the mode change is a checkable
+// restatement of the boundary rather than a behavior change.
+let swiftSettings: [SwiftSetting] = [
+    .swiftLanguageMode(.v6),
+    .enableExperimentalFeature("StrictConcurrency")
+]
+
 let package = Package(
     name: "MCPContractsKit",
     platforms: [
-        .macOS(.v14),
-        .iOS(.v17)
+        .macOS("27.0"),
+        .iOS("27.0")
     ],
     products: [
         .library(name: "MCPContractsKit", targets: ["MCPContractsKit"])
@@ -43,12 +49,12 @@ let package = Package(
     targets: [
         .target(
             name: "MCPContractsKit",
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "MCPContractsKitTests",
             dependencies: ["MCPContractsKit"],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: swiftSettings
         )
     ]
 )
