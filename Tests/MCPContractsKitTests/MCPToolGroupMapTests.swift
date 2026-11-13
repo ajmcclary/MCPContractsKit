@@ -41,6 +41,35 @@ final class MCPToolGroupMapTests: XCTestCase {
 		XCTAssertEqual(map.groups(forToolNamed: "does_not_exist"), [])
 	}
 
+	func testSuppliedAliasResolvesToTheSameGroupsAsItsCanonicalName() {
+		let aliased = MCPToolGroupMap<FixtureGroup, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["ask_user_question": .askUser]
+		)
+		XCTAssertEqual(aliased.groups(forToolNamed: "ask_user_question"), [.conversation])
+		XCTAssertEqual(aliased.groups(forToolNamed: "ask_user_question"), aliased.groups(forToolNamed: "ask_user"))
+		XCTAssertEqual(aliased.groups(forToolNamed: "does_not_exist"), [])
+	}
+
+	func testIsInGroupsAgreesForSuppliedAliasAndCanonicalName() {
+		let aliased = MCPToolGroupMap<FixtureGroup, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["ask_user_question": .askUser]
+		)
+		XCTAssertTrue(aliased.isInGroups("ask_user_question", groups: [.conversation]))
+		XCTAssertFalse(aliased.isInGroups("ask_user_question", groups: [.explore, .edit]))
+		XCTAssertFalse(aliased.isInGroups("does_not_exist", groups: FixtureGroup.allCases))
+	}
+
+	func testCanonicalNameShadowsAnAliasKeyInGroupLookup() {
+		// Same canonical-first order as `MCPToolAliasResolver.canonicalTool(named:)`.
+		let shadowed = MCPToolGroupMap<FixtureGroup, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["read_file": .applyEdits]
+		)
+		XCTAssertEqual(shadowed.groups(forToolNamed: "read_file"), [.explore, .conversation])
+	}
+
 	func testIsInGroups() {
 		XCTAssertTrue(map.isInGroups("apply_edits", groups: [.edit]))
 		XCTAssertTrue(map.isInGroups("read_file", groups: [.conversation]))

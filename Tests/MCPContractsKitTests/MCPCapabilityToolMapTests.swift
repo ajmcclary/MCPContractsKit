@@ -50,6 +50,32 @@ final class MCPCapabilityToolMapTests: XCTestCase {
 		XCTAssertEqual(map.capabilities(for: "does_not_exist"), [])
 	}
 
+	func testSuppliedAliasResolvesToTheSameCapabilitiesAsItsCanonicalName() {
+		let aliased = MCPCapabilityToolMap<FixtureCapability, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["ask_user_question": .askUser]
+		)
+		XCTAssertEqual(aliased.capabilities(for: "ask_user_question"), [.userInteraction, .agentControl])
+		XCTAssertEqual(aliased.capabilities(for: "ask_user_question"), aliased.capabilities(for: "ask_user"))
+	}
+
+	func testUnknownNameHasNoCapabilitiesEvenWithAliasesSupplied() {
+		let aliased = MCPCapabilityToolMap<FixtureCapability, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["ask_user_question": .askUser]
+		)
+		XCTAssertEqual(aliased.capabilities(for: "does_not_exist"), [])
+	}
+
+	func testCanonicalNameShadowsAnAliasKeyInCapabilityLookup() {
+		// Same canonical-first order as `MCPToolAliasResolver.canonicalTool(named:)`.
+		let shadowed = MCPCapabilityToolMap<FixtureCapability, FixtureTool>(
+			mapping: map.mapping,
+			aliases: ["read_file": .applyEdits]
+		)
+		XCTAssertEqual(shadowed.capabilities(for: "read_file"), [.fileRead])
+	}
+
 	func testCapabilityAbsentFromMappingDerivesNoTools() {
 		let partial = MCPCapabilityToolMap<FixtureCapability, FixtureTool>(mapping: [
 			.fileRead: [.readFile]

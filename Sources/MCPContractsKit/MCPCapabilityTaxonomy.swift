@@ -16,15 +16,28 @@ public protocol MCPCapabilityIdentifying: Hashable, Sendable {
 /// Mirrors the live semantics RepoPrompt's taxonomy pinned before extraction:
 /// - forward derivation unions the tool sets of the requested capabilities;
 /// - the typed and string-name APIs agree (same map, `rawValue` projection);
-/// - reverse lookup by NAME resolves canonical raw values only — aliases and
-///   unknown names have no capabilities (empty set, never nil/throw).
+/// - reverse lookup by NAME resolves exactly as
+///   `MCPToolAliasResolver.canonicalTool(named:)` does over the aliases
+///   supplied at init (canonical name first, then alias); unknown names have
+///   no capabilities (empty set, never nil/throw). A map built with
+///   `init(mapping:)` has no aliases, so it resolves canonical names only.
 public struct MCPCapabilityToolMap<Capability: MCPCapabilityIdentifying, Tool: MCPToolIdentifying>: Sendable {
 	/// Capability membership keyed by capability. Not every tool must be
 	/// covered; uncovered tools simply have no capabilities.
 	public let mapping: [Capability: Set<Tool>]
 
+	private let aliasResolver: MCPToolAliasResolver<Tool>
+
 	public init(mapping: [Capability: Set<Tool>]) {
+		self.init(mapping: mapping, aliases: [:])
+	}
+
+	/// - Parameter aliases: legacy/compat names keyed by alias wire name, as
+	///   given to `MCPToolAliasResolver`; name lookups resolve them to their
+	///   canonical tool.
+	public init(mapping: [Capability: Set<Tool>], aliases: [String: Tool]) {
 		self.mapping = mapping
+		self.aliasResolver = MCPToolAliasResolver(aliases: aliases)
 	}
 
 	public func tools(for capabilities: Set<Capability>) -> Set<Tool> {
@@ -43,10 +56,11 @@ public struct MCPCapabilityToolMap<Capability: MCPCapabilityIdentifying, Tool: M
 		})
 	}
 
-	/// Canonical wire names only — aliases deliberately do NOT resolve here
-	/// (unknown names have no capabilities).
+	/// Resolves `toolName` like `MCPToolAliasResolver.canonicalTool(named:)`
+	/// over the supplied aliases, so an alias and its canonical name agree;
+	/// unknown names have no capabilities.
 	public func capabilities(for toolName: String) -> Set<Capability> {
-		guard let tool = Tool(rawValue: toolName) else { return [] }
+		guard let tool = aliasResolver.canonicalTool(named: toolName) else { return [] }
 		return capabilities(for: tool)
 	}
 }

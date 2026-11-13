@@ -52,6 +52,39 @@ final class MCPContractsKitPublicAPIContractTests: XCTestCase {
 		XCTAssertEqual(groupMap.groups(forToolNamed: "ask_user_question"), [])
 	}
 
+	func testStringLookupsResolveSuppliedAliasesExactlyLikeCanonicalTool() {
+		let aliases: [String: FixtureTool] = ["ask_user_question": .askUser, "read_file": .applyEdits]
+		let resolver = MCPToolAliasResolver<FixtureTool>(aliases: aliases)
+		let capabilityMap = MCPCapabilityToolMap<FixtureCapability, FixtureTool>(
+			mapping: [.userInteraction: [.askUser], .fileRead: [.readFile], .fileEdit: [.applyEdits]],
+			aliases: aliases
+		)
+		let groupMap = MCPToolGroupMap<FixtureGroup, FixtureTool>(
+			mapping: [.conversation: [.askUser], .explore: [.readFile], .edit: [.applyEdits]],
+			aliases: aliases
+		)
+		for name in resolver.allRecognizedNames.union(["does_not_exist"]) {
+			let tool = resolver.canonicalTool(named: name)
+			XCTAssertEqual(
+				capabilityMap.capabilities(for: name),
+				tool.map { capabilityMap.capabilities(for: $0) } ?? [],
+				"capabilities disagree with canonicalTool(named:) for \(name)"
+			)
+			XCTAssertEqual(
+				groupMap.groups(forToolNamed: name),
+				tool.map { groupMap.groups(forToolNamed: $0.rawValue) } ?? [],
+				"groups disagree with canonicalTool(named:) for \(name)"
+			)
+			for group in FixtureGroup.allCases {
+				XCTAssertEqual(
+					groupMap.isInGroups(name, groups: [group]),
+					tool.map { groupMap.isInGroups($0.rawValue, groups: [group]) } ?? false,
+					"isInGroups disagrees with canonicalTool(named:) for \(name) in \(group)"
+				)
+			}
+		}
+	}
+
 	func testGroupResultsFollowAllCasesOrder() {
 		let map = MCPToolGroupMap<FixtureGroup, FixtureTool>(mapping: [
 			.explore: [.readFile],
