@@ -58,9 +58,9 @@ schemas, and no MCP SDK dependency. Pair it with an MCP implementation such as t
 
 ```swift
 dependencies: [
-    // 0.1.0-beta.3 is a prerelease identifier; SwiftPM only resolves prerelease tags when the
+    // 0.1.0-beta.4 is a prerelease identifier; SwiftPM only resolves prerelease tags when the
     // lower bound itself names one.
-    .package(url: "https://github.com/ajmcclary/MCPContractsKit.git", .upToNextMinor(from: "0.1.0-beta.3"))
+    .package(url: "https://github.com/ajmcclary/MCPContractsKit.git", .upToNextMinor(from: "0.1.0-beta.4"))
 ],
 targets: [
     .target(name: "MyServer", dependencies: [
